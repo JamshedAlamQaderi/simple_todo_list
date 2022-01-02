@@ -1,0 +1,42 @@
+### Get All Todos
+GET http://192.168.0.101:8080/all_todo
+
+### Delete a todo with todo_id
+DELETE http://192.168.0.101:8080/2
+
+### create a new todo
+POST http://192.168.0.101:8080/create
+content-type: application/json
+
+{
+    "todo_text": "create a new todo 2 app"
+}
+
+### update todo text
+POST http://192.168.0.101:8080/update_todo_text
+content-type: application/json
+
+{
+    "todo_text": "update a new todo 2 app",
+    "todo_id": 3
+}
+
+### update todo to completed
+POST http://192.168.0.101:8080/update_todo_completed
+content-type: application/json
+
+{
+    "todo_id": 3
+}
+
+### update todo priority
+POST http://192.168.0.101:8080/update_todo_priority
+content-type: application/json
+
+{
+    "todo_id": 3,
+    "todo_priority": "Medium"
+}
+
+### search todo by todo_text
+GET http://192.168.0.101:8080/search/todo
