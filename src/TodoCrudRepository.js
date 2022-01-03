@@ -1,14 +1,14 @@
 const { RunQuery, GetQuery } = require("./database");
 
-// priority levels {Normal: 1, Medium: 2, High: 3}
+// priority levels {Low: 1, Medium: 2, High: 3}
 
-const priority = { Normal: 1, Medium: 2, High: 3 };
+const priority = { Low: 1, Medium: 2, High: 3 };
 
 module.exports = {
   createTodo: (todoText) => {
     return RunQuery(
       `INSERT INTO todo_list(todo_text, completed, priority, created_at, updated_at) VALUES(?, ?, ?, ?, ?)`,
-      [todoText, false, priority.Normal, Date.now(), Date.now()]
+      [todoText, false, priority.Low, Date.now(), Date.now()]
     );
   },
 

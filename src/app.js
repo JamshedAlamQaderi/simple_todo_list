@@ -9,10 +9,12 @@ const todoRepository = require("./TodoCrudRepository");
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+console.log('Server running on ' + process.env.NODE_ENV + ' mode')
+
 if (process.env.NODE_ENV !== "production") {
   app.use(
     cors({
-      origin: "https://localhost:8080", // use this option available for dev mode for ui development testing purpose only
+      origin: `http://${localIp.local_ip}:8080`, // use this option available for dev mode for ui development testing purpose only
       optionsSuccessStatus: 200,
     })
   );

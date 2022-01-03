@@ -1,5 +1,5 @@
 <template>
-  <div class="p-0">
+  <div class="p-0 pb-20">
     <div>
       <!-- for title & search bar -->
       <div
@@ -14,11 +14,22 @@
           flex-row
         "
       >
-        <div class="text-2xl bold text-black uppercase">
+        <div class="text-2xl bold text-green-700 uppercase font-serif">
           Simple Todo List App
         </div>
-        <div class="flex border-2 border-gray-200">
-          <input class="px-2 w-72" type="text" placeholder="Search" />
+        <div class="flex border-2 border-gray-200 gap">
+          <input
+            class="
+              px-2
+              w-72
+              ring-inset
+              focus:outline-none focus:ring-1 focus:ring-green-600
+              border-r-2
+            "
+            type="text"
+            placeholder="Search"
+            v-model="searchText"
+          />
           <!-- search icon -->
           <div
             class="
@@ -27,7 +38,7 @@
               flex
               items-center
               justify-center
-              border-l-2 border-gray-200
+              border-gray-200
               hover:bg-gray-100
               cursor-pointer
             "
@@ -45,13 +56,16 @@
       <div class="mt-10 mx-4 gap-8 flex justify-center">
         <!-- for pending todos -->
         <div class="w-1/4">
-          <div class="shadow-lg border-2 border-gray-200">
+          <div class="shadow-lg border-2 border-gray-200 pb-6">
             <div class="w-full text-lg bold text-center border-b-2">Todo's</div>
             <div v-if="todos.length > 0">
               <TodoItem
                 v-for="todoItem in todos"
                 :key="todoItem.todoItemId"
                 :todo-item-data="todoItem"
+                v-on:deletedTodo="deletedTodo($event)"
+                v-on:refreshData="refreshTodoData()"
+                v-on:editTodo="editTodoText($event)"
               />
             </div>
             <div v-else class="w-full text-center py-4">No todo's found</div>
@@ -60,11 +74,19 @@
 
         <!-- completed todos -->
         <div class="w-1/4">
-          <div class="shadow-lg border-2 border-gray-200">
+          <div class="shadow-lg border-2 border-gray-200 pb-6">
             <div class="w-full text-lg bold text-center border-b-2">
               Completed todo's
             </div>
-            <div v-if="completed.length > 0"></div>
+            <div v-if="completed.length > 0">
+              <TodoItem
+                v-for="todoItem in completed"
+                :key="todoItem.todoItemId"
+                :todo-item-data="todoItem"
+                v-on:deletedTodo="deletedTodo($event)"
+                v-on:refreshData="refreshTodoData()"
+              />
+            </div>
             <div v-else class="w-full text-center py-4">
               No completed todo's found
             </div>
@@ -79,9 +101,20 @@
             </div>
             <div class="p-4">
               <input
-                class="border-2 w-full h-12 px-2 rounded-md"
+                class="
+                  border-2
+                  w-full
+                  h-12
+                  px-2
+                  rounded-md
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-green-600
+                  focus:border-0
+                "
                 type="text"
-                placeholder="todo here"
+                placeholder="type todo here"
+                v-model.trim="todoText"
               />
               <button
                 class="
@@ -91,10 +124,19 @@
                   rounded-md
                   uppercase
                   text-white
-                  bg-green-500
+                  focus:outline-none focus:shadow-xl focus:translate-y-0.5
+                  transform
+                  active:translate-y-0.5
+                  focus:border-0
                 "
+                :class="[
+                  todoText.length > 0 ? 'bg-green-600' : 'bg-gray-600',
+                  todoText.length > 0 ? '' : 'bg-opacity-30',
+                ]"
+                @click="createTodo"
+                :disabled="todoText.length === 0"
               >
-                Create
+                {{ createButtonMode === "new" ? "Create" : "Update" }}
               </button>
             </div>
           </div>
@@ -106,23 +148,102 @@
 
 <script>
 import TodoItem from "./components/TodoItem.vue";
+import TodoApi from "./services/TodoApi";
+const api = new TodoApi();
+let todoData = [];
 
 export default {
   name: "App",
   components: { TodoItem },
-  setup() {
-    let item = {
-      todoItemId: 12,
-      todoText: "Create a todo list app",
-      priority: "Low",
-      isCompleted: false,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
+  data() {
     return {
-      todos: [item],
+      todos: [],
       completed: [],
+      todoText: "",
+      editTodoItemId: null,
+      createButtonMode: "new", // edit or new
+      searchText: "",
     };
+  },
+  watch: {
+    searchText: function (newSearchText) {
+      if (newSearchText.trim().length > 0) {
+        let searchedData = todoData.filter((todoItem) =>
+          todoItem.todoText.toLowerCase().includes(newSearchText)
+        );
+        this.todos = searchedData.filter((item) => !item.isCompleted);
+        this.completed = searchedData.filter((item) => item.isCompleted);
+      } else {
+        this.todos = todoData.filter((item) => !item.isCompleted);
+        this.completed = todoData.filter((item) => item.isCompleted);
+      }
+    },
+  },
+  mounted() {
+    this.refreshTodoData();
+  },
+  methods: {
+    deletedTodo() {
+      this.refreshTodoData();
+    },
+    editTodoText(todoId) {
+      this.createButtonMode = "edit";
+      let editTodo = this.todos.filter((item) => item.todoItemId == todoId);
+      if (editTodo.length > 0) {
+        this.todoText = editTodo[0].todoText;
+        this.editTodoItemId = editTodo[0].todoItemId;
+      }
+    },
+    refreshTodoData() {
+      api
+        .getAllTodo()
+        .then((response) => response.json())
+        .then((data) => {
+          let allTodoData = data.map((item) => {
+            return {
+              todoItemId: item.id,
+              todoText: item.todo_text,
+              priority: api.convertPriorityIdxToText(item.priority),
+              isCompleted: item.completed,
+              createdAt: item.created_at,
+              updatedAt: item.updated_at,
+            };
+          });
+          this.todos = allTodoData.filter((item) => !item.isCompleted);
+          this.completed = allTodoData.filter((item) => item.isCompleted);
+          todoData = allTodoData
+        })
+        .catch((err) => console.error("allTodo: ", err));
+    },
+    createTodo() {
+      if (this.createButtonMode === "new") {
+        api
+          .createTodo(this.todoText)
+          .then((response) => {
+            return response.text();
+          })
+          .then((text) => {
+            console.log(text);
+            this.todoText = "";
+            this.refreshTodoData();
+          })
+          .catch((err) => console.error("CreateTodo: ", err));
+      } else if (this.createButtonMode === "edit" && this.editTodoItemId) {
+        api
+          .updateTodoText(this.editTodoItemId, this.todoText)
+          .then((response) => {
+            return response.text();
+          })
+          .then((text) => {
+            console.log(text);
+            this.todoText = "";
+            this.editTodoItemId = null;
+            this.createButtonMode = "new";
+            this.refreshTodoData();
+          })
+          .catch((err) => console.error("UpdateTodo: ", err));
+      }
+    },
   },
 };
 </script>
