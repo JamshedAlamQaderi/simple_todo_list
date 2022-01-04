@@ -130,6 +130,8 @@ app.get("/search/:search_text", (req, res) => {
   }
 });
 
+app.use(express.static('frontend/dist'))
+
 app.listen(process.env.SERVER_PORT, () => {
   console.log(
     `Todo List app listening at http://${localIp.local_ip}:${process.env.SERVER_PORT}`

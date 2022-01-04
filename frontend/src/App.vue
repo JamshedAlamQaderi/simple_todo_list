@@ -211,7 +211,7 @@ export default {
           });
           this.todos = allTodoData.filter((item) => !item.isCompleted);
           this.completed = allTodoData.filter((item) => item.isCompleted);
-          todoData = allTodoData
+          todoData = allTodoData;
         })
         .catch((err) => console.error("allTodo: ", err));
     },
